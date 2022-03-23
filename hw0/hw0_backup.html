@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+	#info {
+		position: absolute;
+		top: 10px; width: 100%;
+		
+		padding: 5px;
+		text-align: center;
+		font-size: 20px;
+		color: #ffff00
+	} 
+	body {
+		overflow: hidden
+  }
+</style>
+</head>
+
+<body>
+<div id='info'> Game in Three.JS <br> 
+<button id="toggle" style="width:20%">Toggle Turn</button>
+</div>
+<script src="https://threejs.org/build/three.min.js"></script>
+<script src="https://threejs.org/examples/js/controls/OrbitControls.js"></script>
+
+<script src="https://code.jquery.com/jquery-2.1.4.min.js"></script>
+
+<script>
+
+var renderer, scene, camera;
+var angle = 0;  // initialization IMPORTANT!
+var turn = false;
+var train;
+var Radius = 15;
+var track1 = 9,track2=7 ,test = 8;
+var clock;
+// make angle & turn 'static'
+
+init();
+animate();
+
+$("#toggle").click(function() {
+  turn = !turn;
+  // change button name
+  if (turn)  // ... is turning 
+    $("#toggle").text ('stop');
+  else
+	$("#toggle").text ('turn');
+});
+function makeTrain(){
+	var train = new THREE.Group();
+	var wheelGeometry = new THREE.CylinderGeometry(0.55,0.55,0.3,20);
+	var cubeGeometry = new THREE.BoxGeometry(3.5,1.4,2);
+	var cubeMaterial = new THREE.MeshNormalMaterial();
+	var wheels = [];
+	var wheels2 = [];
+	//var wheelT = new THREE.Mesh(wheelGeometry,cubeMaterial);
+	for(var i=0;i<4;i++){
+		wheels[i] = new THREE.Mesh(wheelGeometry,cubeMaterial);
+		wheels2[i] = new THREE.Mesh(wheelGeometry,cubeMaterial);
+		wheels[i].rotateX(Math.PI / 2);
+		wheels2[i].rotateX(Math.PI / 2);
+		wheels2[i].rotateZ(6.85);
+	}
+	wheels[0].position.set(-1, 0, -1);
+	wheels[1].position.set(1, 0, -1);
+	wheels[2].position.set(-1, 0, 1);
+	wheels[3].position.set(1, 0, 1);
+	wheels2[0].position.set(3.85, 0, -0.04);
+	wheels2[1].position.set(2.65, 0, 1.48);
+	wheels2[2].position.set(4.2, 0, 2.48);
+	wheels2[3].position.set(5.2, 0, 0.8);
+	cube1 = new THREE.Mesh(cubeGeometry,cubeMaterial);
+	cube2 = new THREE.Mesh(cubeGeometry,cubeMaterial);
+	chimney = new THREE.Mesh(new THREE.CylinderGeometry(0.45,0.45,2,20),new THREE.MeshNormalMaterial());
+	for(var i=0;i<4;i++){
+		wheels[i].position.y = 0.5;
+		wheels2[i].position.y = 0.5;
+	}
+	cube1.position.y = 1;
+	cube2.position.y = 1;
+	cube2.position.x = 4;
+	cube2.position.z = 1.2;
+	cube2.rotateY(-10);
+	chimney.position.y = 1.5;
+	chimney.position.x = -0.75;
+	train.add(cube1,chimney,wheels[0],wheels[1],wheels[2],wheels[3],cube2,wheels2[0],wheels2[1]
+	,wheels2[2],wheels2[3]);
+	return train;
+}
+function makeTrack(t){
+	var points = [];
+	var theta = 0;
+	for(var i=0;i<100;i++){
+		theta = i*Math.PI*2/100;
+		var point = new THREE.Vector3(t*Math.cos(theta),0,t*Math.sin(theta));
+		points.push(point);
+	}
+	var geom = new THREE.BufferGeometry().setFromPoints(points);
+	var line = new THREE.Line(geom,new THREE.LineBasicMaterial({color:0xff0000}));
+	return line;
+}
+function makeWood(t){
+	var points = [];
+	var theta = 0;
+	for(var i=0;i<100;i++){
+		theta = i*Math.PI*2/100;
+		var point = new THREE.Vector3(t*Math.cos(theta),0,t*Math.sin(theta));
+		points.push(point);
+	}
+	var cubeMaterial = new THREE.MeshNormalMaterial();
+	var geom = new THREE.BoxGeometry(2,2,2).setFromPoints(points);
+	
+	var woods = new THREE.Mesh(geom,cubeMaterial);
+	return woods;
+}
+
+function init () {
+	clock = new THREE.Clock();
+	renderer = new THREE.WebGLRenderer();
+	document.body.appendChild (renderer.domElement);
+	var width = window.innerWidth;
+	var height = window.innerHeight;
+	renderer.setSize (width, height);
+	
+	renderer.setClearColor (0x888888);
+	
+	scene = new THREE.Scene();
+	var grid = new THREE.GridHelper(40,40, 0xaaaa00, 0x333333);
+	scene.add (grid);
+	var axes = new THREE.AxesHelper (5);
+	scene.add (axes);
+	
+	camera = new THREE.PerspectiveCamera (35, width/height, 1, 100);
+	camera.position.y = 16;
+	camera.position.z = 40;
+	camera.lookAt (new THREE.Vector3(0,0,0));
+	
+	let controls = new THREE.OrbitControls(camera, renderer.domElement);
+	
+	window.addEventListener('resize', onWindowResize, false);
+	///////////////////////////////////////////////////////////////
+	//var cubeGeometry = new THREE.BoxGeometry (3,1,2);
+	//var cubeMaterial = new THREE.MeshNormalMaterial();
+	//cube = new THREE.Mesh (cubeGeometry, cubeMaterial);
+	train = makeTrain();
+	scene.add (train);
+	scene.add (makeTrack(track1));
+	scene.add (makeTrack(track2));
+	scene.add (makeWood(track1));
+	//scene.add (makeTrack1(test));
+		
+}
+
+function onWindowResize() {
+  
+	var width = window.innerWidth;
+	var height = window.innerHeight;
+	camera.aspect = width / height;
+	camera.updateProjectionMatrix();
+	renderer.setSize(width, height);
+	
+}
+
+function animate() {
+	var dt = clock.getDelta();
+	if (turn) angle += Math.PI/Radius*dt;//Math.PI
+	train.position.set (8*Math.cos(angle), 0, -8*Math.sin(angle));
+	train.rotation.y = angle + 1.5*Math.PI;
+	requestAnimationFrame(animate);
+	render();
+	
+}
+
+function render() {
+	
+	renderer.render(scene, camera);
+	
+}
+
+</script>
+</body>
+
+</html>
