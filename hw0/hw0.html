@@ -53,9 +53,11 @@ function makeTrain(){
 	var wheelGeometry = new THREE.CylinderGeometry(0.55,0.55,0.3,20);
 	var cubeGeometry = new THREE.BoxGeometry(3.5,1.4,2);
 	var cubeMaterial = new THREE.MeshNormalMaterial();
+	var  geometry = new THREE.SphereGeometry(0.35, 30, 30 );
 	var wheels = [];
 	var wheels2 = [];
-	//var wheelT = new THREE.Mesh(wheelGeometry,cubeMaterial);
+	var b = [];
+	var c;
 	for(var i=0;i<4;i++){
 		wheels[i] = new THREE.Mesh(wheelGeometry,cubeMaterial);
 		wheels2[i] = new THREE.Mesh(wheelGeometry,cubeMaterial);
@@ -63,6 +65,12 @@ function makeTrain(){
 		wheels2[i].rotateX(Math.PI / 2);
 		wheels2[i].rotateZ(6.85);
 	}
+	c = new THREE.Mesh(new THREE.BoxGeometry(1,0.35,0.2),cubeMaterial);
+	b[0] =  new THREE.Mesh(geometry,cubeMaterial);
+	b[1] =  new THREE.Mesh(geometry,cubeMaterial);
+	b[0].position.set(1.7,0.6,0);
+	b[1].position.set(2.5,0.6,0.4);
+	c.position.set(2,0.6,0);
 	wheels[0].position.set(-1, 0, -1);
 	wheels[1].position.set(1, 0, -1);
 	wheels[2].position.set(-1, 0, 1);
@@ -83,10 +91,12 @@ function makeTrain(){
 	cube2.position.x = 4;
 	cube2.position.z = 1.2;
 	cube2.rotateY(-10);
+	c.rotateY(-10);
 	chimney.position.y = 1.5;
 	chimney.position.x = -0.75;
-	train.add(cube1,chimney,wheels[0],wheels[1],wheels[2],wheels[3],cube2,wheels2[0],wheels2[1]
-	,wheels2[2],wheels2[3]);
+	train.add(cube1,chimney,wheels[0],wheels[1],
+	wheels[2],wheels[3],cube2,wheels2[0],wheels2[1]
+	,wheels2[2],wheels2[3],b[0],b[1],c);
 	return train;
 }
 function makeTrack(t){
