@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<style>
+        #info {
+        position: absolute;
+        top: 0px;
+        width: 100%;
+        padding: 10px;
+        text-align: center;
+        color: #002fff
+        }
+
+        body {
+        overflow: hidden;
+        }
+		</style>
+	</head>
+
+<body>
+<div id="info"><h3>* HW2 Minecraft Character Animation *<h3><button id="changeView">Third Person View</button></div>
+<script src="https://threejs.org/build/three.min.js"></script>
+<script src="https://threejs.org/examples/js/controls/OrbitControls.js"></script>
+<script src="https://code.jquery.com/jquery-2.1.4.min.js"></script>
+<script src="./buildCharactor.js"></script>
+<script>
+var changeToThird = true,camera3rd,whichCamera = 0;
+$('#changeView').click ( function () {
+	
+    if(changeToThird){
+        whichCamera = 1;
+        $('#changeView').text ('Third Person View')
+        
+    }
+    else{
+        whichCamera = 0;
+        $('#changeView').text ('God View')
+        
+    }
+    changeToThird =!changeToThird;
+})
+
+var view;
+var renderer, scene, camera ;
+var texture;	//皮膚
+var  herobrine;
+var head, torso, lArm, rArm, lLeg, rLeg;
+var theta = 0;
+const WW = 4;
+const HH = 12;
+//var cube;
+
+var pose1 = {
+    lThigh: Math.PI/6,
+    rThigh: -Math.PI/6
+}
+var pose2 = {
+    lThigh: -Math.PI/6,
+    rThigh: +Math.PI/6
+}
+var keys = [
+    [0, pose1],
+    [0.5, pose2],
+    [1, pose1]
+];
+
+var clock = new THREE.Clock();
+var ts = clock.getElapsedTime();
+
+function keyframe(t,T) {
+    var s = ((t - ts) % T) / T;
+
+    for (var i = 1; i < keys.length; i++) {
+        if (keys[i][0] > s) break;
+    }
+    // take i-1
+    var ii = i - 1;
+    var a = (s - keys[ii][0]) / (keys[ii + 1][0] - keys[ii][0]);
+    var intKey = [keys[ii][1].lThigh * (1 - a) + keys[ii + 1][1].lThigh * a,
+            keys[ii][1].rThigh * (1 - a) + keys[ii + 1][1].rThigh * a
+    ];
+    return intKey;
+}
+
+init();
+animate();
+
+
+function init () {
+	
+	//renderer
+	renderer = new THREE.WebGLRenderer();
+	document.body.appendChild (renderer.domElement);
+	renderer.setSize (window.innerWidth, window.innerHeight);
+	renderer.setClearColor (0x888888); //背景顏色
+	
+	//scene
+	scene = new THREE.Scene();
+	var light = new THREE.PointLight( 0xffffff, 1, 1000 );
+	scene.add( light );
+	var gridXZ = new THREE.GridHelper(200, 20, 'red', 'white');
+    scene.add(gridXZ);
+	var axes = new THREE.AxesHelper (10);
+	scene.add (axes);
+	
+	var light = new THREE.PointLight(0xffffff, 1, 1000);
+	scene.add (light);
+	//camera
+	camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 1, 1000);
+    camera.position.set (0,200,400);
+    camera3rd = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 1, 1000);
+	let controls =  new THREE.OrbitControls(camera, renderer.domElement); //OrbitControls
+
+
+   
+	///////////////////////////////////////////////////////////////
+	//scene.add(buildSteve());
+	
+	
+	var loader = new THREE.TextureLoader();
+    loader.setCrossOrigin('');
+    //load herobrine skin
+    texture = loader.load ('https://i.imgur.com/Yie8INp.png');
+    //建立人物 herobrine
+    herobrine = new THREE.Group();  //herobrine group
+	torso = buildTorso(2*WW,HH,WW); //build torso(body)
+	head = buildHead(2*WW,2*WW,2*WW); //build head
+    head.position.y = WW*2;
+    //手部
+    rArm = buildArms(WW,HH,WW);
+    rArm.position.set (WW*1.5, HH, 0);
+    lArm = buildArms(WW,HH,WW);
+    lArm.position.set (-WW*1.5, HH, 0);
+    //腳部
+    lLeg = buildLegs(WW,HH,WW);
+    lLeg.position.set (WW/2, 0, 0);
+    rLeg = buildLegs(WW,HH,WW);
+    rLeg.position.set (-WW/2, 0, 0);
+    herobrine.add(head,torso,lArm,rArm,lLeg,rLeg);//將頭部和四肢加入到herobrine group中
+	//herobrine.position.set(0,WW,0);//高度調整
+	scene.add(herobrine);
+	//pose
+    lLeg.rotation.x = -Math.PI/6;
+    rLeg.rotation.x = Math.PI/6;
+    lArm.rotation.x = Math.PI/6;
+    rArm.rotation.x = -Math.PI/6;
+}
+
+function animate() {
+	requestAnimationFrame(animate);
+    var cameraOffset = torso.localToWorld (new THREE.Vector3(0,40,-30));
+    camera3rd.position.copy(cameraOffset);
+    camera3rd.lookAt(torso.localToWorld(new THREE.Vector3(0,0,60)));
+    render();
+	let dt = clock.getDelta();
+    let R = 40;
+    var f = 0.9;//四肢擺動頻率
+    let omega = HH/R/f;  
+    let intKey;
+   
+    theta += omega*dt*1.2;
+	if(theta/(Math.PI*2) % 2 > 1){
+        //小圈
+        //f = 0.6;
+        intKey = keyframe(clock.getElapsedTime(),f);
+        theta += omega*dt*2.4;
+        herobrine.position.set ((-R/2*Math.sin(theta+Math.PI/2))+20, HH, R/2*Math.cos(theta+Math.PI/2));
+        herobrine.rotation.y = -(Math.PI + theta);//[]
+        rArm.rotation.x = intKey[1]/1.2;//擺動幅度
+        lArm.rotation.x = intKey[0]/1.2;
+        rLeg.rotation.x = intKey[1]/1.2;
+        lLeg.rotation.x = intKey[0]/1.2;
+    }
+    else{
+        //大圈
+        f = 1.2;
+        intKey = keyframe(clock.getElapsedTime(),f);
+        //theta += omega*dt*2;
+        herobrine.position.set (R*Math.cos(theta)-40, HH, -R*Math.sin(theta));
+        herobrine.rotation.y = -Math.PI + theta;
+        rArm.rotation.x = intKey[1]/1.6;//擺動幅度
+        lArm.rotation.x = intKey[0]/1.6;
+        rLeg.rotation.x = intKey[1]/1.6;
+        lLeg.rotation.x = intKey[0]/1.6;
+        
+    }
+
+}
+
+function render() {
+	switch (whichCamera) {
+    case 0:
+      renderer.render(scene, camera);
+      break;
+    case 1:
+      renderer.render(scene, camera3rd);
+      break;
+  }
+	
+}
+
+</script>
+</body>
+
+</html>
